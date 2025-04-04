@@ -1,0 +1,5 @@
+accelerate
+deepspeed==0.8.2
+mpi4py
+pydantic==1.10.9
+transformers

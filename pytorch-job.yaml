@@ -1,0 +1,92 @@
+apiVersion: "kubeflow.org/v1"
+kind: "PyTorchJob"
+metadata:
+  name: "pytorch-dist-nccl"
+spec:
+  pytorchReplicaSpecs:
+    Master:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          containers:
+            - name: pytorch
+              image: master.cm.cluster:5000/pytorch-example:v1
+              imagePullPolicy: Always
+              command:
+              - /bin/bash
+              - -c
+              args:
+              - |
+                # sample pytorch+nccl job
+                /workspace/torch_launch.sh ddp/train_elastic.py
+                # sleep to exec to bash for debugging
+                #sleep infinity
+              resources:
+                limits:
+                  nvidia.com/gpu: 8
+              securityContext:
+                capabilities:
+                  add: ["IPC_LOCK"]
+              volumeMounts:
+                - mountPath: /dev/shm
+                  name: dshm
+                - mountPath: /dev/infiniband
+                  name: infiniband-volume
+                - mountPath: /data
+                  name: demo-claim
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          - name: infiniband-volume
+            hostPath:
+              path: /dev/infiniband
+              type: Directory
+          - name: demo-claim
+            persistentVolumeClaim:
+              claimName: demo-claim
+
+    Worker:
+      replicas: 15
+      restartPolicy: Never
+      template:
+        spec:
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          containers:
+            - name: pytorch
+              image: master.cm.cluster:5000/pytorch-example:v1
+              imagePullPolicy: Always
+              command:
+              - /bin/bash
+              - -c
+              args:
+              - |
+                # sample pytorch+nccl job
+                /workspace/torch_launch.sh ddp/train_elastic.py
+                # sleep to exec to bash for debugging
+                #sleep infinity
+              resources:
+                limits:
+                  nvidia.com/gpu: 8 
+              volumeMounts:
+                - mountPath: /dev/shm
+                  name: dshm
+                - mountPath: /dev/infiniband
+                  name: infiniband-volume
+                - mountPath: /data
+                  name: demo-claim
+          volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          - name: infiniband-volume
+            hostPath:
+              path: /dev/infiniband
+              type: Directory
+          - name: demo-claim
+            persistentVolumeClaim:
+              claimName: demo-claim
